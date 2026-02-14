@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sachi Skin - Customer Service Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Login Screen */
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .login-card {
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+        }
+        
+        .login-card h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .login-card p {
+            color: #666;
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+        
+        .fb-login-btn {
+            background: #1877f2;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        
+        .fb-login-btn:hover {
+            background: #166fe5;
+        }
+        
+        .fb-icon {
+            font-size: 20px;
+        }
+        
+        .bot-disclosure {
+            margin-top: 24px;
+            padding: 16px;
+            background: #f0f2f5;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #65676b;
+            text-align: left;
+        }
+        
+        .bot-disclosure strong {
+            color: #333;
+        }
+        
+        /* Top Header */
+        .top-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .brand h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .brand p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .instagram-connected {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #4caf50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 12px;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        /* Main Container */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+        
+        /* Chat Panel */
+        .chat-panel {
+            width: 50%;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            background: #fafafa;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .chat-header h2 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .customer-handle {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        
+        .message {
+            margin-bottom: 16px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 80%;
+            line-height: 1.4;
+            font-size: 14px;
+            word-wrap: break-word;
+        }
+        
+        .message.customer .message-bubble {
+            background: #e4e6eb;
+            color: #050505;
+            margin-right: auto;
+        }
+        
+        .message.business .message-bubble {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+        }
+        
+        .message-meta {
+            font-size: 11px;
+            color: #65676b;
+            margin-top: 4px;
+            padding: 0 8px;
+        }
+        
+        .chat-input-area {
+            border-top: 1px solid #e0e0e0;
+            padding: 16px;
+            background: white;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .input-wrapper input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 24px;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .input-wrapper input:focus {
+            border-color: #667eea;
+        }
+        
+        .send-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .send-btn:hover {
+            background: #5568d3;
+        }
+        
+        /* Order Panel */
+        .order-panel {
+            width: 50%;
+            background: #fafafa;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            background: white;
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .panel-header h2 {
+            font-size: 18px;
+            color: #333;
+        }
+        
+        .order-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .order-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .order-number {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .order-status {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .order-status.shipped {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .order-status.processing {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .customer-info {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .customer-info h3 {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .customer-info p {
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .products-list {
+            margin-bottom: 20px;
+        }
+        
+        .product-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            background: #fafafa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .product-image {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+        }
+        
+        .product-details {
+            flex: 1;
+        }
+        
+        .product-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .product-meta {
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .product-price {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 14px;
+        }
+        
+        .order-summary {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 2px solid #e0e0e0;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .summary-row.total {
+            font-weight: 700;
+            font-size: 16px;
+            color: #667eea;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .shipping-info {
+            background: #e8f5e9;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+        
+        .shipping-info h4 {
+            font-size: 13px;
+            color: #2e7d32;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .shipping-info p {
+            font-size: 12px;
+            color: #1b5e20;
+            line-height: 1.6;
+        }
+        
+        .no-order {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        
+        .no-order-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .api-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 12px;
+            max-width: 300px;
+        }
+        
+        .api-status.success {
+            border-left: 4px solid #4caf50;
+        }
+        
+        .api-status.error {
+            border-left: 4px solid #f44336;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen (shown initially) -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <h1>🌸 Sachi Skin Customer Service</h1>
+            <p>Instagram Direct Message Management System</p>
+            
+            <button class="fb-login-btn" onclick="loginWithFacebook()">
+                <span class="fb-icon">f</span>
+                <span>Login with Facebook</span>
+            </button>
+            
+            <div class="bot-disclosure">
+                <strong>🤖 Bot Disclosure:</strong> This app uses automated messaging to help you track orders and get customer service. You can request a human agent at any time.
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App (shown after login) -->
+    <div id="mainApp" style="display: none;">
+        <div class="top-header">
+            <div class="brand">
+                <div>
+                    <h1>🌸 Sachi Skin Customer Service</h1>
+                    <p>Instagram Direct Message Management System</p>
+                </div>
+            </div>
+            <div class="instagram-connected">
+                <div class="status-dot"></div>
+                <span id="connectedAccount">Instagram API Connected</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="main-container">
+            <!-- Left: Chat Panel -->
+            <div class="chat-panel">
+                <div class="chat-header">
+                    <h2>
+                        <span class="instagram-icon">📱</span>
+                        Instagram Direct Messages
+                    </h2>
+                    <span class="customer-handle">Conversation with: <span id="customerHandle">Loading...</span></span>
+                </div>
+                
+                <div class="messages-area" id="messagesArea">
+                    <div class="loading">Loading conversations...</div>
+                </div>
+                
+                <div class="chat-input-area">
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="messageInput" 
+                            placeholder="Type a message..."
+                            onkeypress="if(event.key==='Enter') sendMessage()"
+                        >
+                        <button class="send-btn" onclick="sendMessage()">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Order Details Panel -->
+            <div class="order-panel">
+                <div class="panel-header">
+                    <h2>📦 Customer Order Details</h2>
+                </div>
+                
+                <div class="order-content" id="orderContent">
+                    <div class="no-order">
+                        <div class="no-order-icon">📋</div>
+                        <p>No order selected</p>
+                        <p style="font-size: 12px; margin-top: 8px;">Order details will appear when customer provides order information</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Facebook SDK -->
+    <script>
+        // ========================================
+        // CONFIGURATION - REPLACE WITH YOUR VALUES
+        // ========================================
+        const FB_APP_ID = '496894366699700'; // Your Facebook App ID
+        const IG_USER_ID = '17841406811202760'; // Instagram Business Account ID (verified correct)
+        
+        let accessToken = null;
+        let userProfile = null;
+        
+        // ========================================
+        // FACEBOOK SDK INITIALIZATION
+        // ========================================
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId      : FB_APP_ID,
+                cookie     : true,
+                xfbml      : true,
+                version    : 'v19.0'
+            });
+            
+            // Check if already logged in
+            FB.getLoginStatus(function(response) {
+                if (response.status === 'connected') {
+                    accessToken = response.authResponse.accessToken;
+                    handleLoginSuccess(response);
+                }
+            });
+        };
+        
+        // Load Facebook SDK
+        (function(d, s, id){
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) {return;}
+            js = d.createElement(s); js.id = id;
+            js.src = "https://connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+        
+        // ========================================
+        // FACEBOOK LOGIN
+        // ========================================
+        function loginWithFacebook() {
+            FB.login(function(response) {
+                if (response.authResponse) {
+                    accessToken = response.authResponse.accessToken;
+                    handleLoginSuccess(response);
+                } else {
+                    showAPIStatus('Login cancelled', 'error');
+                }
+            }, {
+                scope: 'instagram_basic,instagram_manage_messages,pages_show_list,pages_read_engagement',
+                return_scopes: true
+            });
+        }
+        
+        function handleLoginSuccess(response) {
+            showAPIStatus('Login successful! Loading Instagram data...', 'success');
+            
+            // Get user info
+            FB.api('/me', {fields: 'name,email'}, function(userResponse) {
+                userProfile = userResponse;
+                document.getElementById('connectedAccount').textContent = 
+                    `Connected as: ${userResponse.name}`;
+                
+                // Show main app
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                
+                // Load Instagram conversations
+                loadInstagramConversations();
+            });
+        }
+        
+        function logout() {
+            FB.logout(function(response) {
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('mainApp').style.display = 'none';
+                accessToken = null;
+                userProfile = null;
+            });
+        }
+        
+        // ========================================
+        // INSTAGRAM API CALLS
+        // ========================================
+        function loadInstagramConversations() {
+            // Get Instagram conversations
+            FB.api(
+                `/${IG_USER_ID}/conversations`,
+                'GET',
+                { access_token: accessToken, fields: 'participants,messages{message,from}' },
+                function(response) {
+                    if (response && !response.error) {
+                        showAPIStatus('Successfully loaded conversations!', 'success');
+                        displayConversations(response.data);
+                    } else {
+                        showAPIStatus('Error loading conversations: ' + response.error.message, 'error');
+                        // Fallback to demo mode
+                        loadDemoConversation();
+                    }
+                }
+            );
+        }
+        
+        function displayConversations(conversations) {
+            const messagesArea = document.getElementById('messagesArea');
+            messagesArea.innerHTML = '';
+            
+            if (conversations && conversations.length > 0) {
+                const conv = conversations[0]; // Show first conversation
+                
+                // Display participant
+                if (conv.participants && conv.participants.data[0]) {
+                    const participant = conv.participants.data[0];
+                    document.getElementById('customerHandle').textContent = 
+                        `@${participant.username || 'customer'}`;
+                }
+                
+                // Display messages
+                if (conv.messages && conv.messages.data) {
+                    conv.messages.data.forEach(msg => {
+                        const isFromCustomer = msg.from.username !== 'sachiskin';
+                        addMessage(msg.message, isFromCustomer);
+                    });
+                }
+                
+                // Auto-respond with bot disclosure
+                setTimeout(() => {
+                    sendBotResponse("👋 Hi! I'm the Sachi Skin bot. How can I help you today?");
+                }, 1000);
+            } else {
+                loadDemoConversation();
+            }
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            
+            if (!text) return;
+            
+            addMessage(text, false);
+            input.value = '';
+            
+            // Send via Instagram API
+            if (accessToken && IG_USER_ID) {
+                FB.api(
+                    `/${IG_USER_ID}/messages`,
+                    'POST',
+                    {
+                        recipient: { id: 'RECIPIENT_ID' }, // Get from selected conversation
+                        message: { text: text },
+                        access_token: accessToken
+                    },
+                    function(response) {
+                        if (response && !response.error) {
+                            showAPIStatus('Message sent successfully!', 'success');
+                        } else {
+                            showAPIStatus('Error sending message', 'error');
+                        }
+                    }
+                );
+            }
+            
+            // Process message for order lookup
+            setTimeout(() => {
+                handleConversation(text.toLowerCase());
+            }, 1500);
+        }
+        
+        function sendBotResponse(text) {
+            addMessage(text, false);
+        }
+        
+        // ========================================
+        // DEMO MODE (Fallback)
+        // ========================================
+        function loadDemoConversation() {
+            showAPIStatus('Running in demo mode. In production, this would show real Instagram DMs.', 'success');
+            
+            document.getElementById('customerHandle').textContent = '@test_user_sachiskin';
+            
+            setTimeout(() => {
+                addMessage("Hello! I have a question about my order", true);
+                
+                setTimeout(() => {
+                    sendBotResponse("👋 Hi! I'm the Sachi Skin bot. How can I help you today?");
+                }, 1500);
+            }, 1000);
+        }
+        
+        // ========================================
+        // UI HELPERS
+        // ========================================
+        function addMessage(text, isFromCustomer) {
+            const timestamp = new Date().toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+            
+            const username = isFromCustomer ? '@test_user_sachiskin' : '@sachiskin';
+            const messageClass = isFromCustomer ? 'customer' : 'business';
+            
+            const html = `
+                <div class="message ${messageClass}">
+                    <div class="message-bubble">${text}</div>
+                    <div class="message-meta">${username} · ${timestamp}</div>
+                </div>
+            `;
+            
+            document.getElementById('messagesArea').insertAdjacentHTML('beforeend', html);
+            document.getElementById('messagesArea').scrollTop = 
+                document.getElementById('messagesArea').scrollHeight;
+        }
+        
+        function showAPIStatus(message, type) {
+            const existing = document.querySelector('.api-status');
+            if (existing) existing.remove();
+            
+            const div = document.createElement('div');
+            div.className = `api-status ${type}`;
+            div.textContent = message;
+            document.body.appendChild(div);
+            
+            setTimeout(() => div.remove(), 5000);
+        }
+        
+        // ========================================
+        // CONVERSATION LOGIC (Demo)
+        // ========================================
+        let conversationState = 'greeting';
+        const orders = {
+            'SS-2024-1234': {
+                orderNumber: 'SS-2024-1234',
+                status: 'Shipped',
+                customer: 'Sarah Johnson',
+                email: 'sarah.j@email.com',
+                date: 'Feb 10, 2024',
+                products: [
+                    {
+                        name: 'Triphala Pigmentation Corrector',
+                        quantity: 2,
+                        price: 45.00,
+                        sku: 'TPC-001'
+                    },
+                    {
+                        name: 'Pro Resilience Serum',
+                        quantity: 1,
+                        price: 65.00,
+                        sku: 'PRS-002'
+                    }
+                ],
+                shipping: 'Express Shipping (2-3 days)',
+                trackingNumber: 'FDX123456',
+                address: '123 Beauty Lane, New York, NY 10001'
+            }
+        };
+        
+        function handleConversation(userMessage) {
+            if (userMessage.includes('order') || userMessage.includes('ss-2024')) {
+                const orderMatch = userMessage.match(/ss-\d{4}-\d{4}/i);
+                if (orderMatch) {
+                    showOrderDetails(orderMatch[0].toUpperCase());
+                    setTimeout(() => {
+                        sendBotResponse("Found your order! It has been shipped via FedEx. Tracking: FDX123456. Would you like to speak with a human agent? Reply 'agent' anytime. 😊");
+                    }, 1000);
+                }
+            }
+        }
+        
+        function showOrderDetails(orderNum) {
+            const order = orders[orderNum];
+            if (!order) return;
+            
+            const subtotal = order.products.reduce((sum, p) => sum + (p.price * p.quantity), 0);
+            const shipping = 15;
+            const total = subtotal + shipping;
+            
+            const productsHTML = order.products.map(p => `
+                <div class="product-item">
+                    <div class="product-image">${p.sku}</div>
+                    <div class="product-details">
+                        <div class="product-name">${p.name}</div>
+                        <div class="product-meta">Quantity: ${p.quantity} | SKU: ${p.sku}</div>
+                    </div>
+                    <div class="product-price">$${(p.price * p.quantity).toFixed(2)}</div>
+                </div>
+            `).join('');
+            
+            const html = `
+                <div class="order-card">
+                    <div class="order-header">
+                        <div class="order-number">Order #${order.orderNumber}</div>
+                        <div class="order-status ${order.status.toLowerCase()}">${order.status}</div>
+                    </div>
+                    
+                    <div class="customer-info">
+                        <h3>Customer Information</h3>
+                        <p><strong>${order.customer}</strong></p>
+                        <p>${order.email}</p>
+                        <p>Order Date: ${order.date}</p>
+                    </div>
+                    
+                    <div class="products-list">
+                        <h3 style="font-size: 13px; color: #666; margin-bottom: 12px;">Products</h3>
+                        ${productsHTML}
+                    </div>
+                    
+                    <div class="order-summary">
+                        <div class="summary-row">
+                            <span>Subtotal:</span>
+                            <span>$${subtotal.toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Shipping:</span>
+                            <span>$${shipping.toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total:</span>
+                            <span>$${total.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="shipping-info">
+                        <h4>📦 Shipping Information</h4>
+                        <p><strong>Status:</strong> ${order.status}</p>
+                        <p><strong>Tracking:</strong> ${order.trackingNumber}</p>
+                        <p><strong>Address:</strong> ${order.address}</p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('orderContent').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
