@@ -640,9 +640,68 @@
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
                 
-                // Load Instagram conversations
-                loadInstagramConversations();
+                // First, get Facebook Pages to find Instagram account
+                getInstagramAccountFromPages();
             });
+        }
+        
+        // New function: Get Instagram account through Facebook Pages
+        function getInstagramAccountFromPages() {
+            console.log('📄 Getting Facebook Pages...');
+            
+            FB.api('/me/accounts', {fields: 'id,name,instagram_business_account'}, function(response) {
+                console.log('📄 Pages response:', response);
+                
+                if (response && response.data && response.data.length > 0) {
+                    // Find the page with Instagram connected
+                    const pageWithIG = response.data.find(page => page.instagram_business_account);
+                    
+                    if (pageWithIG) {
+                        console.log('✅ Found page with Instagram:', pageWithIG);
+                        const igAccountId = pageWithIG.instagram_business_account.id;
+                        console.log('📱 Instagram Account ID from Page:', igAccountId);
+                        
+                        // Now load conversations using the correct ID
+                        loadInstagramConversationsViaPage(igAccountId, pageWithIG.id);
+                    } else {
+                        console.warn('⚠️ No Instagram account connected to any page');
+                        alert('No Instagram Business Account found connected to your Facebook Pages.\n\nPlease connect your Instagram account to a Facebook Page first.');
+                        loadDemoConversation();
+                    }
+                } else {
+                    console.warn('⚠️ No Facebook Pages found');
+                    alert('No Facebook Pages found. You need a Facebook Page to use Instagram messaging.');
+                    loadDemoConversation();
+                }
+            });
+        }
+        
+        // Updated function to load conversations
+        function loadInstagramConversationsViaPage(igAccountId, pageId) {
+            console.log('🔍 Loading conversations for IG Account:', igAccountId);
+            
+            // Use the Page's access token for Instagram API calls
+            FB.api(
+                `/${igAccountId}/conversations`,
+                'GET',
+                { fields: 'participants,messages{message,from,created_time}' },
+                function(response) {
+                    console.log('📡 Conversations response:', response);
+                    
+                    if (response && !response.error) {
+                        alert('SUCCESS! Found ' + (response.data?.length || 0) + ' conversations');
+                        showAPIStatus('Successfully loaded ' + (response.data?.length || 0) + ' conversations!', 'success');
+                        displayConversations(response.data, igAccountId);
+                    } else {
+                        const errorMsg = response.error?.message || 'Unknown error';
+                        console.error('❌ API Error:', response.error);
+                        alert('API ERROR: ' + errorMsg + '\n\nThis usually means:\n- Instagram account not properly connected\n- Need App Review approval\n- Using wrong account type\n\nFalling back to demo mode for testing.');
+                        
+                        showAPIStatus('Note: Real API requires approval. Using demo mode.', 'success');
+                        loadDemoConversation();
+                    }
+                }
+            );
         }
         
         function logout() {
@@ -688,12 +747,14 @@
             );
         }
         
-        function displayConversations(conversations) {
+        function displayConversations(conversations, igAccountId) {
             const messagesArea = document.getElementById('messagesArea');
             messagesArea.innerHTML = '';
             
             if (conversations && conversations.length > 0) {
                 const conv = conversations[0]; // Show first conversation
+                
+                console.log('💬 Displaying conversation:', conv);
                 
                 // Display participant
                 if (conv.participants && conv.participants.data[0]) {
@@ -705,7 +766,7 @@
                 // Display messages
                 if (conv.messages && conv.messages.data) {
                     conv.messages.data.forEach(msg => {
-                        const isFromCustomer = msg.from.username !== 'sachiskin';
+                        const isFromCustomer = !msg.from || msg.from.id !== igAccountId;
                         addMessage(msg.message, isFromCustomer);
                     });
                 }
@@ -715,6 +776,7 @@
                     sendBotResponse("👋 Hi! I'm the Sachi Skin bot. How can I help you today?");
                 }, 1000);
             } else {
+                console.log('📭 No conversations found, loading demo');
                 loadDemoConversation();
             }
         }
