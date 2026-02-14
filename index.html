@@ -622,10 +622,16 @@
         }
         
         function handleLoginSuccess(response) {
+            console.log('🎉 Login successful!', response);
+            console.log('🔑 Access Token:', response.authResponse.accessToken);
+            console.log('👤 User ID:', response.authResponse.userID);
+            console.log('📋 Granted Scopes:', response.authResponse.grantedScopes);
+            
             showAPIStatus('Login successful! Loading Instagram data...', 'success');
             
             // Get user info
             FB.api('/me', {fields: 'name,email'}, function(userResponse) {
+                console.log('👤 User Profile:', userResponse);
                 userProfile = userResponse;
                 document.getElementById('connectedAccount').textContent = 
                     `Connected as: ${userResponse.name}`;
@@ -652,17 +658,32 @@
         // INSTAGRAM API CALLS
         // ========================================
         function loadInstagramConversations() {
+            console.log('🔍 Attempting to load Instagram conversations...');
+            console.log('📱 Instagram User ID:', IG_USER_ID);
+            console.log('🔑 Access Token exists:', !!accessToken);
+            
             // Get Instagram conversations
             FB.api(
                 `/${IG_USER_ID}/conversations`,
                 'GET',
                 { access_token: accessToken, fields: 'participants,messages{message,from}' },
                 function(response) {
+                    console.log('📡 API Response received:', response);
+                    
                     if (response && !response.error) {
+                        console.log('✅ Successfully loaded conversations!', response.data);
                         showAPIStatus('Successfully loaded conversations!', 'success');
                         displayConversations(response.data);
                     } else {
-                        showAPIStatus('Error loading conversations: ' + response.error.message, 'error');
+                        console.error('❌ API Error:', response.error);
+                        console.error('Error details:', {
+                            message: response.error?.message,
+                            type: response.error?.type,
+                            code: response.error?.code,
+                            fbtrace_id: response.error?.fbtrace_id
+                        });
+                        
+                        showAPIStatus('Error loading conversations: ' + (response.error?.message || 'Unknown error'), 'error');
                         // Fallback to demo mode
                         loadDemoConversation();
                     }
