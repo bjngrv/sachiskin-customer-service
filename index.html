@@ -770,11 +770,6 @@
                         addMessage(msg.message, isFromCustomer);
                     });
                 }
-                
-                // Auto-respond with bot disclosure
-                setTimeout(() => {
-                    sendBotResponse("👋 Hi! I'm the Sachi Skin bot. How can I help you today?");
-                }, 1000);
             } else {
                 console.log('📭 No conversations found, loading demo');
                 loadDemoConversation();
@@ -830,10 +825,6 @@
             
             setTimeout(() => {
                 addMessage("Hello! I have a question about my order", true);
-                
-                setTimeout(() => {
-                    sendBotResponse("👋 Hi! I'm the Sachi Skin bot. How can I help you today?");
-                }, 1500);
             }, 1000);
         }
         
@@ -910,9 +901,6 @@
                 const orderMatch = userMessage.match(/ss-\d{4}-\d{4}/i);
                 if (orderMatch) {
                     showOrderDetails(orderMatch[0].toUpperCase());
-                    setTimeout(() => {
-                        sendBotResponse("Found your order! It has been shipped via FedEx. Tracking: FDX123456. Would you like to speak with a human agent? Reply 'agent' anytime. 😊");
-                    }, 1000);
                 }
             }
         }
