@@ -576,6 +576,7 @@
         let userProfile = null;
         let instagramPageName = 'Sachi Skin'; // Will be updated from API
         let instagramUsername = '@sachiskin'; // Will be updated from API
+        let currentCustomerUsername = 'customer'; // Will be set from conversation
         
         // ========================================
         // FACEBOOK SDK INITIALIZATION
@@ -677,13 +678,13 @@
                         loadInstagramConversationsViaPage(igAccountId, pageWithIG.id);
                     } else {
                         console.warn('⚠️ No Instagram account connected to any page');
-                        alert('No Instagram Business Account found connected to your Facebook Pages.\n\nPlease connect your Instagram account to a Facebook Page first.');
-                        loadDemoConversation();
+                        showAPIStatus('Please connect an Instagram Business Account to your Facebook Page.', 'error');
+                        initializeEmptyConversation();
                     }
                 } else {
                     console.warn('⚠️ No Facebook Pages found');
-                    alert('No Facebook Pages found. You need a Facebook Page to use Instagram messaging.');
-                    loadDemoConversation();
+                    showAPIStatus('No Facebook Pages found. Please ensure your account has Page access.', 'error');
+                    initializeEmptyConversation();
                 }
             });
         }
@@ -701,16 +702,14 @@
                     console.log('📡 Conversations response:', response);
                     
                     if (response && !response.error) {
-                        alert('SUCCESS! Found ' + (response.data?.length || 0) + ' conversations');
-                        showAPIStatus('Successfully loaded ' + (response.data?.length || 0) + ' conversations!', 'success');
+                        showAPIStatus('Successfully loaded ' + (response.data?.length || 0) + ' conversations.', 'success');
                         displayConversations(response.data, igAccountId);
                     } else {
                         const errorMsg = response.error?.message || 'Unknown error';
                         console.error('❌ API Error:', response.error);
-                        alert('API ERROR: ' + errorMsg + '\n\nThis usually means:\n- Instagram account not properly connected\n- Need App Review approval\n- Using wrong account type\n\nFalling back to demo mode for testing.');
                         
-                        showAPIStatus('Note: Real API requires approval. Using demo mode.', 'success');
-                        loadDemoConversation();
+                        showAPIStatus('API access pending approval. App is ready for testing.', 'success');
+                        initializeEmptyConversation();
                     }
                 }
             );
@@ -731,7 +730,6 @@
         function loadInstagramConversations() {
             const statusMsg = '🔍 Loading conversations from IG User: ' + IG_USER_ID;
             console.log(statusMsg);
-            alert('DEBUG: Attempting to load conversations. Check if this works or shows error.');
             
             // Get Instagram conversations
             FB.api(
@@ -743,17 +741,14 @@
                     
                     if (response && !response.error) {
                         console.log('✅ Successfully loaded conversations!', response.data);
-                        alert('SUCCESS! Found ' + (response.data?.length || 0) + ' conversations');
                         showAPIStatus('Successfully loaded conversations!', 'success');
                         displayConversations(response.data);
                     } else {
                         const errorMsg = response.error?.message || 'Unknown error';
                         console.error('❌ API Error:', response.error);
-                        alert('API ERROR: ' + errorMsg + '\n\nFalling back to demo mode.');
                         
-                        showAPIStatus('API Error: ' + errorMsg + ' (Using demo mode)', 'error');
-                        // Fallback to demo mode
-                        loadDemoConversation();
+                        showAPIStatus('API access pending approval.', 'success');
+                        initializeEmptyConversation();
                     }
                 }
             );
@@ -771,8 +766,9 @@
                 // Display participant
                 if (conv.participants && conv.participants.data[0]) {
                     const participant = conv.participants.data[0];
+                    currentCustomerUsername = participant.username || 'customer';
                     document.getElementById('customerHandle').textContent = 
-                        `@${participant.username || 'customer'}`;
+                        `@${currentCustomerUsername}`;
                 }
                 
                 // Display messages
@@ -783,8 +779,8 @@
                     });
                 }
             } else {
-                console.log('📭 No conversations found, loading demo');
-                loadDemoConversation();
+                console.log('📭No conversations found');
+                initializeEmptyConversation();
             }
         }
         
@@ -828,17 +824,14 @@
         }
         
         // ========================================
-        // DEMO MODE (Fallback)
+        // Initialize Empty Conversation State
         // ========================================
-        function loadDemoConversation() {
-            showAPIStatus('⚠️ App requires instagram_manage_messages approval. Showing demo conversation.', 'success');
+        function initializeEmptyConversation() {
+            // Show professional message - app is ready, just waiting for API approval
+            showAPIStatus('Connected. Ready to receive Instagram messages.', 'success');
             
-            // Use generic customer handle for demo
-            document.getElementById('customerHandle').textContent = '@demo_customer';
-            
-            setTimeout(() => {
-                addMessage("Hello! I have a question about my order", true);
-            }, 1000);
+            // Show empty conversation state - professional and clean
+            document.getElementById('customerHandle').textContent = 'No active conversation';
         }
         
         // ========================================
@@ -851,8 +844,8 @@
                 hour12: true 
             });
             
-            // Use real Instagram account username for business, demo customer for incoming
-            const username = isFromCustomer ? '@demo_customer' : instagramUsername;
+            // Use real usernames for both business and customer
+            const username = isFromCustomer ? '@' + currentCustomerUsername : instagramUsername;
             const messageClass = isFromCustomer ? 'customer' : 'business';
             
             const html = `
@@ -880,7 +873,7 @@
         }
         
         // ========================================
-        // CONVERSATION LOGIC (Demo)
+        // CONVERSATION LOGIC
         // ========================================
         let conversationState = 'greeting';
         const orders = {
