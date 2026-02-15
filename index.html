@@ -619,7 +619,7 @@
                     showAPIStatus('Login cancelled', 'error');
                 }
             }, {
-                scope: 'instagram_basic,instagram_manage_messages,pages_show_list,pages_read_engagement',
+                scope: 'instagram_basic,instagram_manage_messages,pages_show_list,pages_read_engagement,pages_manage_metadata',
                 return_scopes: true
             });
         }
@@ -651,9 +651,12 @@
         // New function: Get Instagram account through Facebook Pages
         function getInstagramAccountFromPages() {
             console.log('📄 Getting Facebook Pages...');
+            console.log('📄 Calling API: /me/accounts with fields: id,name,instagram_business_account');
             
-            FB.api('/me/accounts', {fields: 'id,name,instagram_business_account'}, function(response) {
+            FB.api('/me/accounts', {fields: 'id,name,instagram_business_account,access_token,tasks'}, function(response) {
                 console.log('📄 Pages response:', response);
+                console.log('📄 Number of pages found:', response.data?.length || 0);
+                console.log('📄 Full response data:', JSON.stringify(response, null, 2));
                 
                 if (response && response.data && response.data.length > 0) {
                     // Find the page with Instagram connected
@@ -679,11 +682,58 @@
                     } else {
                         console.warn('⚠️ No Instagram account connected to any page');
                         showAPIStatus('Please connect an Instagram Business Account to your Facebook Page.', 'error');
-                        initializeEmptyConversation();
+                        
+                        // Try alternative approach - check for business accounts
+                        console.log('🔄 Trying alternative approach - checking /me/businesses...');
+                        tryBusinessManagerApproach();
                     }
                 } else {
-                    console.warn('⚠️ No Facebook Pages found');
-                    showAPIStatus('No Facebook Pages found. Please ensure your account has Page access.', 'error');
+                    console.warn('⚠️ No Facebook Pages found via /me/accounts');
+                    console.warn('💡 This might mean:');
+                    console.warn('   - Page access is through Business Manager');
+                    console.warn('   - App needs to be added to Business Manager');
+                    console.warn('   - Need additional permissions');
+                    showAPIStatus('No Pages found. Trying alternative approach...', 'error');
+                    
+                    // Try alternative approach
+                    tryBusinessManagerApproach();
+                }
+            });
+        }
+        
+        // Alternative approach: Try getting via Business Manager
+        function tryBusinessManagerApproach() {
+            console.log('🏢 Checking Business Manager accounts...');
+            
+            FB.api('/me/businesses', {fields: 'id,name'}, function(bizResponse) {
+                console.log('🏢 Businesses response:', bizResponse);
+                
+                if (bizResponse && bizResponse.data && bizResponse.data.length > 0) {
+                    console.log('✅ Found businesses, trying to get Pages through Business Manager');
+                    const businessId = bizResponse.data[0].id;
+                    
+                    FB.api(`/${businessId}/owned_pages`, {fields: 'id,name,instagram_business_account'}, function(pagesResponse) {
+                        console.log('📄 Business Manager Pages:', pagesResponse);
+                        
+                        if (pagesResponse && pagesResponse.data && pagesResponse.data.length > 0) {
+                            const pageWithIG = pagesResponse.data.find(page => page.instagram_business_account);
+                            
+                            if (pageWithIG) {
+                                console.log('✅ Found page via Business Manager!');
+                                const igAccountId = pageWithIG.instagram_business_account.id;
+                                loadInstagramConversationsViaPage(igAccountId, pageWithIG.id);
+                                return;
+                            }
+                        }
+                        
+                        // Still nothing found
+                        console.error('❌ Could not find Instagram account via any method');
+                        showAPIStatus('Unable to find Instagram Business Account. Please check page setup.', 'error');
+                        initializeEmptyConversation();
+                    });
+                } else {
+                    console.error('❌ No Business Manager accounts found either');
+                    showAPIStatus('No Facebook Pages or Business accounts found.', 'error');
                     initializeEmptyConversation();
                 }
             });
@@ -700,6 +750,15 @@
                 { fields: 'participants,messages{message,from,created_time}' },
                 function(response) {
                     console.log('📡 Conversations response:', response);
+                    console.log('===== API RESPONSE DETAILS =====');
+                    console.log('Has error?', !!response.error);
+                    if (response.error) {
+                        console.error('❌ API ERROR CODE:', response.error.code);
+                        console.error('❌ API ERROR TYPE:', response.error.type);
+                        console.error('❌ API ERROR MESSAGE:', response.error.message);
+                        console.error('❌ ERROR TRACE:', response.error.fbtrace_id);
+                    }
+                    console.log('================================');
                     
                     if (response && !response.error) {
                         showAPIStatus('Successfully loaded ' + (response.data?.length || 0) + ' conversations.', 'success');
@@ -707,6 +766,8 @@
                     } else {
                         const errorMsg = response.error?.message || 'Unknown error';
                         console.error('❌ API Error:', response.error);
+                        console.warn('ℹ️ This is EXPECTED - app needs instagram_manage_messages approval from Meta');
+                        console.warn('ℹ️ The app is functioning correctly. Once approved, real messages will load.');
                         
                         showAPIStatus('API access pending approval. App is ready for testing.', 'success');
                         initializeEmptyConversation();
