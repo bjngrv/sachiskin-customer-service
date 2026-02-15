@@ -574,6 +574,8 @@
         
         let accessToken = null;
         let userProfile = null;
+        let instagramPageName = 'Sachi Skin'; // Will be updated from API
+        let instagramUsername = '@sachiskin'; // Will be updated from API
         
         // ========================================
         // FACEBOOK SDK INITIALIZATION
@@ -660,6 +662,16 @@
                         console.log('✅ Found page with Instagram:', pageWithIG);
                         const igAccountId = pageWithIG.instagram_business_account.id;
                         console.log('📱 Instagram Account ID from Page:', igAccountId);
+                        
+                        // Store Instagram page info for display
+                        instagramPageName = pageWithIG.name;
+                        // Get Instagram username if available
+                        FB.api(`/${igAccountId}`, {fields: 'username'}, function(igResponse) {
+                            if (igResponse && igResponse.username) {
+                                instagramUsername = '@' + igResponse.username;
+                                console.log('📱 Instagram Username:', instagramUsername);
+                            }
+                        });
                         
                         // Now load conversations using the correct ID
                         loadInstagramConversationsViaPage(igAccountId, pageWithIG.id);
@@ -819,9 +831,10 @@
         // DEMO MODE (Fallback)
         // ========================================
         function loadDemoConversation() {
-            showAPIStatus('Running in demo mode. In production, this would show real Instagram DMs.', 'success');
+            showAPIStatus('⚠️ App requires instagram_manage_messages approval. Showing demo conversation.', 'success');
             
-            document.getElementById('customerHandle').textContent = '@test_user_sachiskin';
+            // Use generic customer handle for demo
+            document.getElementById('customerHandle').textContent = '@demo_customer';
             
             setTimeout(() => {
                 addMessage("Hello! I have a question about my order", true);
@@ -838,7 +851,8 @@
                 hour12: true 
             });
             
-            const username = isFromCustomer ? '@test_user_sachiskin' : '@sachiskin';
+            // Use real Instagram account username for business, demo customer for incoming
+            const username = isFromCustomer ? '@demo_customer' : instagramUsername;
             const messageClass = isFromCustomer ? 'customer' : 'business';
             
             const html = `
