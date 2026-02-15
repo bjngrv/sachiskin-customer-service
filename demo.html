@@ -320,6 +320,156 @@
             margin-bottom: 20px;
         }
         
+        /* Order Card Styles */
+        .order-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .order-number {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .order-status {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .order-status.shipped {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .order-status.processing {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .customer-info {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .customer-info h3 {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .customer-info p {
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .products-list {
+            margin-bottom: 20px;
+        }
+        
+        .product-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            background: #fafafa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .product-image {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+        }
+        
+        .product-details {
+            flex: 1;
+        }
+        
+        .product-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .product-meta {
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .product-price {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 14px;
+        }
+        
+        .order-summary {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 2px solid #e0e0e0;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .summary-row.total {
+            font-weight: 700;
+            font-size: 16px;
+            color: #667eea;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .shipping-info {
+            background: #e8f5e9;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+        
+        .shipping-info h4 {
+            font-size: 13px;
+            color: #2e7d32;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .shipping-info p {
+            font-size: 12px;
+            color: #1b5e20;
+            line-height: 1.6;
+        }
+        
         /* Loading & Empty States */
         .loading, .no-conversations {
             text-align: center;
@@ -445,15 +595,47 @@
         let allConversations = [];
         let currentConversation = null;
         
+        // Demo Order Data
+        const demoOrders = {
+            'SS-2024-1234': {
+                orderNumber: 'SS-2024-1234',
+                status: 'Shipped',
+                customer: 'Sarah Johnson',
+                email: 'sarah.j@email.com',
+                date: 'Feb 10, 2024',
+                products: [
+                    {
+                        name: 'Triphala Pigmentation Corrector',
+                        quantity: 2,
+                        price: 45.00,
+                        sku: 'TPC-001'
+                    },
+                    {
+                        name: 'Pro Resilience Serum',
+                        quantity: 1,
+                        price: 65.00,
+                        sku: 'PRS-002'
+                    }
+                ],
+                shipping: 'Express Shipping (2-3 days)',
+                trackingNumber: 'FDX123456789',
+                carrier: 'FedEx',
+                address: '123 Beauty Lane, New York, NY 10001'
+            }
+        };
+        
         // Demo Conversations Data
         const demoConversations = [
             {
                 id: 'conv_001',
                 participants: {data: [{id: 'user_sarah', username: 'sarah_johnson_22'}]},
+                hasOrder: true,
+                orderNumber: 'SS-2024-1234',
                 messages: {data: [
                     {id: 'msg_001', message: 'Hi! I placed an order last week but haven\'t received tracking info yet. Order #SS-2024-1234', from: {id: 'user_sarah'}, created_time: '2024-02-15T10:30:00'},
-                    {id: 'msg_002', message: 'Hi Sarah! Let me look up your order for you.', from: {id: 'business'}, created_time: '2024-02-15T10:31:00'},
-                    {id: 'msg_003', message: 'Great! Thank you so much', from: {id: 'user_sarah'}, created_time: '2024-02-15T10:31:30'}
+                    {id: 'msg_002', message: 'Hi Sarah! I can help you with that. Can you please confirm your email address for verification?', from: {id: 'business'}, created_time: '2024-02-15T10:31:00'},
+                    {id: 'msg_003', message: 'Sure! It\'s sarah.j@email.com', from: {id: 'user_sarah'}, created_time: '2024-02-15T10:31:30'},
+                    {id: 'msg_004', message: 'Perfect! I found your order. Let me pull up the details for you.', from: {id: 'business'}, created_time: '2024-02-15T10:32:00'}
                 ]}
             },
             {
@@ -536,6 +718,13 @@
             document.getElementById('chatUsername').textContent = `@${username}`;
             
             displayMessages(currentConversation.messages.data);
+            
+            // Check if conversation has an order and display it
+            if (currentConversation.hasOrder && currentConversation.orderNumber) {
+                displayOrderDetails(currentConversation.orderNumber);
+            } else {
+                clearOrderDetails();
+            }
         }
         
         // Display Messages
@@ -617,6 +806,84 @@
             // Refresh display
             displayMessages(currentConversation.messages.data);
             showAPIStatus('Message deleted (demo mode)', 'success');
+        }
+        
+        // Display Order Details
+        function displayOrderDetails(orderNumber) {
+            const order = demoOrders[orderNumber];
+            if (!order) {
+                clearOrderDetails();
+                return;
+            }
+            
+            const subtotal = order.products.reduce((sum, p) => sum + (p.price * p.quantity), 0);
+            const shipping = 15;
+            const total = subtotal + shipping;
+            
+            const productsHTML = order.products.map(p => `
+                <div class="product-item">
+                    <div class="product-image">${p.sku}</div>
+                    <div class="product-details">
+                        <div class="product-name">${p.name}</div>
+                        <div class="product-meta">Quantity: ${p.quantity} | SKU: ${p.sku}</div>
+                    </div>
+                    <div class="product-price">$${(p.price * p.quantity).toFixed(2)}</div>
+                </div>
+            `).join('');
+            
+            const html = `
+                <div class="order-card">
+                    <div class="order-header">
+                        <div class="order-number">Order #${order.orderNumber}</div>
+                        <div class="order-status ${order.status.toLowerCase()}">${order.status}</div>
+                    </div>
+                    
+                    <div class="customer-info">
+                        <h3>Customer Information</h3>
+                        <p><strong>${order.customer}</strong></p>
+                        <p>${order.email}</p>
+                        <p>Order Date: ${order.date}</p>
+                    </div>
+                    
+                    <div class="products-list">
+                        <h3 style="font-size: 13px; color: #666; margin-bottom: 12px;">Products</h3>
+                        ${productsHTML}
+                    </div>
+                    
+                    <div class="order-summary">
+                        <div class="summary-row">
+                            <span>Subtotal:</span>
+                            <span>$${subtotal.toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Shipping:</span>
+                            <span>$${shipping.toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total:</span>
+                            <span>$${total.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="shipping-info">
+                        <h4>📦 Shipping Information</h4>
+                        <p><strong>Status:</strong> ${order.status}</p>
+                        <p><strong>Carrier:</strong> ${order.carrier}</p>
+                        <p><strong>Tracking:</strong> ${order.trackingNumber}</p>
+                        <p><strong>Address:</strong> ${order.address}</p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('orderContent').innerHTML = html;
+        }
+        
+        function clearOrderDetails() {
+            document.getElementById('orderContent').innerHTML = `
+                <div class="no-conversations">
+                    <p>No order selected</p>
+                </div>
+            `;
         }
         
         // Show Status
