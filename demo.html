@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sachi Skin - Customer Service Dashboard (Demo Mode)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Login Screen */
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .login-card {
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+        }
+        
+        .login-card h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .login-card p {
+            color: #666;
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+        
+        .fb-login-btn {
+            background: #1877f2;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        
+        .fb-login-btn:hover {
+            background: #166fe5;
+        }
+        
+        .bot-disclosure {
+            margin-top: 24px;
+            padding: 16px;
+            background: #f0f2f5;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #65676b;
+            text-align: left;
+        }
+        
+        /* Top Header */
+        .top-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .brand h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .brand p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        /* Main Container - 3 Column Layout */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 68px);
+        }
+        
+        /* Left: Conversation List */
+        .conversations-list {
+            width: 350px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .conversations-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .conversations-header h2 {
+            font-size: 18px;
+            color: #333;
+        }
+        
+        .conversation-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .conversation-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .conversation-item.active {
+            background: #e7f3ff;
+            border-left: 3px solid #667eea;
+        }
+        
+        .conversation-user {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .conversation-preview {
+            font-size: 13px;
+            color: #666;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Center: Chat Panel */
+        .chat-panel {
+            flex: 1;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            background: #fafafa;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .chat-header h2 {
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        
+        .message {
+            margin-bottom: 16px;
+            animation: slideIn 0.3s ease;
+            position: relative;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .message.business {
+            justify-content: flex-end;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message-content {
+            max-width: 70%;
+        }
+        
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.4;
+            font-size: 14px;
+            word-wrap: break-word;
+            position: relative;
+        }
+        
+        .message.customer .message-bubble {
+            background: #e4e6eb;
+            color: #050505;
+        }
+        
+        .message.business .message-bubble {
+            background: #667eea;
+            color: white;
+        }
+        
+        .message-meta {
+            font-size: 11px;
+            color: #65676b;
+            margin-top: 4px;
+            padding: 0 8px;
+        }
+        
+        .message-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .delete-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .message:hover .delete-btn {
+            opacity: 1;
+        }
+        
+        .delete-btn:hover {
+            background: #d32f2f;
+        }
+        
+        .chat-input-area {
+            border-top: 1px solid #e0e0e0;
+            padding: 16px;
+            background: white;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .input-wrapper input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 24px;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .send-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .send-btn:hover {
+            background: #5568d3;
+        }
+        
+        /* Right: Order Panel */
+        .order-panel {
+            width: 400px;
+            background: #fafafa;
+            border-left: 1px solid #e0e0e0;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .panel-header h2 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        /* Loading & Empty States */
+        .loading, .no-conversations {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        
+        /* Status Messages */
+        .api-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 13px;
+            z-index: 1000;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .api-status.success {
+            border-left: 4px solid #4caf50;
+        }
+        
+        .api-status.error {
+            border-left: 4px solid #f44336;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <h1>🌸 Sachi Skin Customer Service</h1>
+            <p>Instagram Direct Message Management System</p>
+            
+            <button class="fb-login-btn" onclick="loginWithFacebook()">
+                <span>Login with Facebook</span>
+            </button>
+            
+            <div class="bot-disclosure">
+                <strong>🤖 Bot Disclosure:</strong> This app uses automated messaging to help you track orders and get customer service. You can request a human agent at any time.
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" style="display: none;">
+        <div class="top-header">
+            <div class="brand">
+                <div>
+                    <h1>🌸 Sachi Skin Customer Service</h1>
+                    <p id="connectedAccount">Instagram Direct Messages</p>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="main-container">
+            <!-- Left: Conversations List -->
+            <div class="conversations-list">
+                <div class="conversations-header">
+                    <h2>Conversations</h2>
+                </div>
+                <div id="conversationsList">
+                    <div class="loading">Loading conversations...</div>
+                </div>
+            </div>
+
+            <!-- Center: Chat -->
+            <div class="chat-panel">
+               <div class="chat-header">
+                    <h2 id="chatUsername">Select a conversation</h2>
+                </div>
+                
+                <div class="messages-area" id="messagesArea">
+                    <div class="loading">Select a conversation to view messages</div>
+                </div>
+                
+                <div class="chat-input-area">
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="messageInput" 
+                            placeholder="Type a message..."
+                            onkeypress="if(event.key==='Enter') sendMessage()"
+                        >
+                        <button class="send-btn" onclick="sendMessage()">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Order Details -->
+            <div class="order-panel">
+                <div class="panel-header">
+                    <h2>📦 Order Details</h2>
+                </div>
+                <div id="orderContent">
+                    <div class="no-conversations">
+                        <p>No order selected</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demo Mode - No Facebook SDK Required -->
+    <script>
+        // DEMO MODE - All data is simulated
+        let instagramUsername = '@sachiskin';
+        let allConversations = [];
+        let currentConversation = null;
+        
+        // Demo Conversations Data
+        const demoConversations = [
+            {
+                id: 'conv_001',
+                participants: {data: [{id: 'user_sarah', username: 'sarah_johnson_22'}]},
+                messages: {data: [
+                    {id: 'msg_001', message: 'Hi! I placed an order last week but haven\'t received tracking info yet. Order #SS-2024-1234', from: {id: 'user_sarah'}, created_time: '2024-02-15T10:30:00'},
+                    {id: 'msg_002', message: 'Hi Sarah! Let me look up your order for you.', from: {id: 'business'}, created_time: '2024-02-15T10:31:00'},
+                    {id: 'msg_003', message: 'Great! Thank you so much', from: {id: 'user_sarah'}, created_time: '2024-02-15T10:31:30'}
+                ]}
+            },
+            {
+                id: 'conv_002',
+                participants: {data: [{id: 'user_emily', username: 'emily_wellness'}]},
+                messages: {data: [
+                    {id: 'msg_004', message: 'Do you ship to Canada? I\'m interested in the Triphala Pigmentation Corrector', from: {id: 'user_emily'}, created_time: '2024-02-15T09:15:00'},
+                    {id: 'msg_005', message: 'Yes! We ship to Canada. Shipping takes 5-7 business days.', from: {id: 'business'}, created_time: '2024-02-15T09:17:00'},
+                    {id: 'msg_006', message: 'Perfect! What are the shipping costs?', from: {id: 'user_emily'}, created_time: '2024-02-15T09:18:00'}
+                ]}
+            },
+            {
+                id: 'conv_003',
+                participants: {data: [{id: 'user_mike', username: 'mike_skincare_guru'}]},
+                messages: {data: [
+                    {id: 'msg_007', message: 'I love the Pro Resilience Serum! Can I get a discount code for my next purchase?', from: {id: 'user_mike'}, created_time: '2024-02-14T16:45:00'},
+                    {id: 'msg_008', message: 'So happy to hear you love it! Check your DMs for a special 15% discount code 🎁', from: {id: 'business'}, created_time: '2024-02-14T16:47:00'}
+                ]}
+            },
+            {
+                id: 'conv_004',
+                participants: {data: [{id: 'user_jessica', username: 'jess_beauty_blogger'}]},
+                messages: {data: [
+                    {id: 'msg_009', message: 'Hey! I\'m a beauty influencer with 50k followers. Would you be interested in a collaboration?', from: {id: 'user_jessica'}, created_time: '2024-02-14T14:20:00'},
+                    {id: 'msg_010', message: 'Hi Jessica! We\'d love to explore this. Can you email our partnerships team at partnerships@sachiskin.com?', from: {id: 'business'}, created_time: '2024-02-14T14:25:00'}
+                ]}
+            }
+        ];
+        
+        // Initialize Demo Mode
+        window.onload = function() {
+            // Skip login, show app directly
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            document.getElementById('connectedAccount').textContent = 'Demo Mode - Sample Conversations';
+            
+            // Load demo conversations
+            allConversations = demoConversations;
+            displayConversationsList(allConversations);
+            showAPIStatus('Demo Mode: Simulated Instagram conversations for testing', 'success');
+        };
+        
+        function logout() {
+            location.reload();
+        }
+        
+        // Display Conversations List
+        function displayConversationsList(conversations) {
+            const listDiv = document.getElementById('conversationsList');
+            listDiv.innerHTML = '';
+            
+            conversations.forEach((conv, index) => {
+                const participant = conv.participants.data[0];
+                const username = participant.username;
+                const lastMessage = conv.messages.data[conv.messages.data.length - 1].message;
+                
+                const item = document.createElement('div');
+                item.className = 'conversation-item';
+                item.onclick = () => selectConversation(index);
+                item.innerHTML = `
+                    <div class="conversation-user">@${username}</div>
+                    <div class="conversation-preview">${lastMessage.substring(0, 50)}...</div>
+                `;
+                listDiv.appendChild(item);
+            });
+        }
+        
+        // Select Conversation
+        function selectConversation(index) {
+            currentConversation = allConversations[index];
+            
+            // Highlight selected
+            document.querySelectorAll('.conversation-item').forEach((item, i) => {
+                item.classList.toggle('active', i === index);
+            });
+            
+            const participant = currentConversation.participants.data[0];
+            const username = participant.username;
+            
+            document.getElementById('chatUsername').textContent = `@${username}`;
+            
+            displayMessages(currentConversation.messages.data);
+        }
+        
+        // Display Messages
+        function displayMessages(messages) {
+            const messagesArea = document.getElementById('messagesArea');
+            messagesArea.innerHTML = '';
+            
+            messages.forEach(msg => {
+                const isFromBusiness = msg.from.id === 'business';
+                addMessageToUI(msg.message, !isFromBusiness, msg.id);
+            });
+        }
+        
+        function addMessageToUI(text, isFromCustomer, messageId = null) {
+            const messagesArea = document.getElementById('messagesArea');
+            const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            
+            const username = isFromCustomer ? `@${currentConversation.participants.data[0].username}` : instagramUsername;
+            const messageClass = isFromCustomer ? 'customer' : 'business';
+            
+            const div = document.createElement('div');
+            div.className = `message ${messageClass}`;
+            div.innerHTML = `
+                <div class="message-content">
+                    <div class="message-bubble">${text}</div>
+                    <div class="message-meta">${username} · ${timestamp}</div>
+                </div>
+                ${messageId && !isFromCustomer ? `
+                    <div class="message-actions">
+                        <button class="delete-btn" onclick="deleteMessage('${messageId}')">Delete</button>
+                    </div>
+                ` : ''}
+            `;
+            
+            messagesArea.appendChild(div);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+        
+        // Send Message (Demo Mode - Local Only)
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            
+            if (!text || !currentConversation) {
+                if (!currentConversation) {
+                    showAPIStatus('Please select a conversation first', 'error');
+                }
+                return;
+            }
+            
+            // Create demo message
+            const newMessage = {
+                id: 'msg_demo_' + Date.now(),
+                message: text,
+                from: {id: 'business'},
+                created_time: new Date().toISOString()
+            };
+            
+            // Add to conversation data
+            currentConversation.messages.data.push(newMessage);
+            
+            // Add to UI
+            addMessageToUI(text, false, newMessage.id);
+            input.value = '';
+            
+            showAPIStatus('Message sent (demo mode)', 'success');
+        }
+        
+        // Delete Message (Demo Mode - Local Only)
+        function deleteMessage(messageId) {
+            if (!confirm('Delete this message?')) return;
+            
+            // Remove from conversation data
+            const messageIndex = currentConversation.messages.data.findIndex(m => m.id === messageId);
+            if (messageIndex !== -1) {
+                currentConversation.messages.data.splice(messageIndex, 1);
+            }
+            
+            // Refresh display
+            displayMessages(currentConversation.messages.data);
+            showAPIStatus('Message deleted (demo mode)', 'success');
+        }
+        
+        // Show Status
+        function showAPIStatus(message, type) {
+            const existing = document.querySelector('.api-status');
+            if (existing) existing.remove();
+            
+            const div = document.createElement('div');
+            div.className = `api-status ${type}`;
+            div.textContent = message;
+            document.body.appendChild(div);
+            
+            setTimeout(() => div.remove(), 5000);
+        }
+    </script>
+</body>
+</html>
