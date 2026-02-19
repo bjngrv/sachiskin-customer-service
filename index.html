@@ -58,10 +58,25 @@
         .send-btn { background: #764ba2; color: white; border: none; padding: 10px 20px; border-radius: 24px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
         .send-btn:hover { background: #6a3d94; }
         .order-panel { width: 300px; min-width: 220px; background: white; border-left: 1px solid #e5e7eb; display: flex; flex-direction: column; }
-        .order-card { margin: 16px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; }
-        .order-card h3 { font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 12px; }
-        .order-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; color: #374151; }
-        .order-row.total { font-weight: 700; border-top: 1px solid #e5e7eb; padding-top: 8px; margin-top: 4px; }
+        .order-search-bar { padding: 12px 16px; border-bottom: 1px solid #e5e7eb; display: flex; gap: 8px; }
+        #orderSearchInput { flex: 1; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; outline: none; }
+        #orderSearchInput:focus { border-color: #764ba2; }
+        .order-search-btn { background: #764ba2; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .order-search-btn:hover { background: #6a3d94; }
+        .order-info-card { margin: 12px 16px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; font-size: 13px; }
+        .order-info-card h3 { font-size: 14px; font-weight: 700; color: #111827; margin-bottom: 10px; }
+        .order-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+        .order-section-title { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+        .order-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; color: #374151; }
+        .order-row .label { color: #6b7280; }
+        .order-row .value { font-weight: 500; text-align: right; max-width: 58%; word-break: break-word; }
+        .order-item { padding: 2px 0; color: #374151; font-size: 12px; }
+        .order-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; vertical-align: middle; margin-left: 6px; }
+        .badge-fulfilled { background: #d1fae5; color: #065f46; }
+        .badge-unfulfilled { background: #fef3c7; color: #92400e; }
+        .badge-cancelled { background: #fee2e2; color: #991b1b; }
+        .quick-lookup { margin-left: 6px; padding: 1px 7px; background: #ede9fe; color: #5b21b6; border: none; border-radius: 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
+        .quick-lookup:hover { background: #ddd6fe; }
         .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; color: white; z-index: 9999; animation: fadeInUp 0.3s ease; max-width: 360px; }
         .toast.success { background: #16a34a; }
         .toast.error { background: #dc2626; }
@@ -125,8 +140,12 @@
             </div>
             <!-- Order Details -->
             <div class="order-panel">
-                <div class="panel-header">📦 Order Details</div>
-                <div id="orderContent"><div class="no-conversations" style="padding-top:40px;">No order selected</div></div>
+                <div class="panel-header">📦 Order Lookup</div>
+                <div class="order-search-bar">
+                    <input type="text" id="orderSearchInput" placeholder="Email or #1234" onkeypress="if(event.key==='Enter') lookupOrder()">
+                    <button class="order-search-btn" onclick="lookupOrder()">Search</button>
+                </div>
+                <div id="orderContent"><div class="no-conversations" style="padding-top:24px; font-size:13px; color:#9ca3af; text-align:center;">Search by email or order number</div></div>
             </div>
         </div>
     </div>
@@ -318,7 +337,7 @@
       const username = (customer && customer.username) || 'instagram_user'
       document.getElementById('chatUsername').textContent = '@' + username
       displayMessages((currentConversation.messages && currentConversation.messages.data) || [])
-      document.getElementById('orderContent').innerHTML = '<div class="no-conversations" style="padding-top:40px;">No order info for this conversation</div>'
+      document.getElementById('orderContent').innerHTML = '<div class="no-conversations" style="padding-top:24px; font-size:13px; color:#9ca3af; text-align:center;">Search by email or order number</div>'
     }
 
     function displayMessages(messages) {
@@ -327,24 +346,36 @@
       var sorted = messages.slice().reverse()
       sorted.forEach(function(msg){
         var isFromBusiness = msg.from && msg.from.id === igAccountId
-        addMessageToUI(msg.message, !isFromBusiness, msg.id)
+        addMessageToUI(msg.message, !isFromBusiness, msg.id, false)
       })
       area.scrollTop = area.scrollHeight
     }
 
-    function addMessageToUI(text, isFromCustomer, messageId) {
+    function addMessageToUI(text, isFromCustomer, messageId, canDelete) {
       const area = document.getElementById('messagesArea')
       const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
       const customer = currentConversation && (currentConversation.participants && currentConversation.participants.data || []).find(function(p){ return p.id !== igAccountId })
       const senderLabel = isFromCustomer ? '@' + ((customer && customer.username) || 'customer') : instagramUsername
+      // Auto-detect email or order # in customer messages
+      var quickLookup = ''
+      if (isFromCustomer && text) {
+        var emailMatch = text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)
+        var orderMatch = text.match(/#?(\d{4,6})\b/)
+        if (emailMatch) {
+          quickLookup = '<button class="quick-lookup" onclick="lookupOrder(\'' + emailMatch[0].replace(/'/g, '') + '\')">🔍 ' + escapeHtml(emailMatch[0]) + '</button>'
+        } else if (orderMatch) {
+          quickLookup = '<button class="quick-lookup" onclick="lookupOrder(\'#' + orderMatch[1] + '\')">🔍 #' + escapeHtml(orderMatch[1]) + '</button>'
+        }
+      }
       const div = document.createElement('div')
       div.className = 'message ' + (isFromCustomer ? 'customer' : 'business')
       div.innerHTML =
         '<div class="message-bubble">' + escapeHtml(text) + '</div>' +
-        '<div class="message-meta">' + senderLabel + ' · ' + time + '</div>' +
-        (messageId && !isFromCustomer ? '<div class="message-actions"><button class="delete-btn" onclick="deleteMessage(\'' + messageId + '\')">🗑 Delete</button></div>' : '')
+        '<div class="message-meta">' + senderLabel + ' · ' + time + (quickLookup ? ' ' + quickLookup : '') + '</div>' +
+        (canDelete && messageId && !isFromCustomer ? '<div class="message-actions"><button class="delete-btn" onclick="deleteMessage(\'' + messageId + '\')">🗑 Delete</button></div>' : '')
       area.appendChild(div)
       area.scrollTop = area.scrollHeight
+      return div
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -359,7 +390,7 @@
       const customer = (currentConversation.participants && currentConversation.participants.data || []).find(function(p){ return p.id !== igAccountId })
       if (!customer) { showToast('Could not identify recipient', 'error'); return }
 
-      addMessageToUI(text, false)
+      const msgDiv = addMessageToUI(text, false, null, false)
       input.value = ''
 
       try {
@@ -368,13 +399,82 @@
           message:   { text: text },
         })
         if (result.error) throw new Error(result.error.message || JSON.stringify(result.error))
+        // If the API returned a message_id, add the delete button to the sent message
+        if (result.message_id && msgDiv) {
+          var actionsDiv = document.createElement('div')
+          actionsDiv.className = 'message-actions'
+          actionsDiv.innerHTML = '<button class="delete-btn" onclick="deleteMessage(\'' + result.message_id + '\')">🗑 Delete</button>'
+          msgDiv.appendChild(actionsDiv)
+        }
         showToast('Message sent ✓', 'success')
       } catch (err) {
         console.error('sendMessage error:', err)
         showToast('Failed to send: ' + err.message, 'error')
-        const msgs = document.querySelectorAll('.message.business')
-        if (msgs.length) msgs[msgs.length - 1].remove()
+        if (msgDiv) msgDiv.remove()
       }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  ORDER LOOKUP
+    // ═══════════════════════════════════════════════════════════════
+    async function lookupOrder(prefill) {
+      const input = document.getElementById('orderSearchInput')
+      if (prefill !== undefined) input.value = prefill
+      const query = input.value.trim()
+      if (!query) return
+      const orderContent = document.getElementById('orderContent')
+      orderContent.innerHTML = '<div class="loading" style="padding-top:24px;">Searching...</div>'
+      try {
+        var payload
+        if (/^\d+$/.test(query)) {
+          payload = { order_id: query }
+        } else if (query.startsWith('#')) {
+          payload = { order_id: query.slice(1) }
+        } else {
+          payload = { email: query }
+        }
+        const resp = await fetch('https://yupexdimsfuswwkouewp.supabase.co/functions/v1/appfb-order-lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        const data = await resp.json()
+        if (data.error) throw new Error(data.error)
+        const orders = Array.isArray(data) ? data : [data]
+        if (!orders.length) {
+          orderContent.innerHTML = '<div class="no-conversations" style="padding-top:24px; font-size:13px;">No orders found</div>'
+          return
+        }
+        orderContent.innerHTML = orders.map(renderOrderCard).join('')
+      } catch (err) {
+        orderContent.innerHTML = '<div class="no-conversations" style="padding-top:24px; color:#dc2626; font-size:13px;">Error: ' + escapeHtml(err.message) + '</div>'
+      }
+    }
+
+    function renderOrderCard(order) {
+      const fulfillStatus = (order.fulfillment_status || '').toLowerCase()
+      const orderStatus = (order.status || '').toLowerCase()
+      const badge = orderStatus === 'cancelled' ? 'badge-cancelled' :
+                    fulfillStatus === 'fulfilled' ? 'badge-fulfilled' : 'badge-unfulfilled'
+      const statusText = orderStatus === 'cancelled' ? 'Cancelled' :
+                         fulfillStatus === 'fulfilled' ? 'Fulfilled' : 'Unfulfilled'
+      const items = (order.line_items || []).map(function(item) {
+        return '<div class="order-item">• ' + escapeHtml(item.name || item.title || '') +
+               (item.quantity > 1 ? ' ×' + item.quantity : '') + '</div>'
+      }).join('')
+      const tracking = (order.tracking || []).map(function(t) {
+        return '<div class="order-item">• <a href="' + escapeHtml(t.url || '#') + '" target="_blank" style="color:#764ba2;">' +
+               escapeHtml(t.company || 'Carrier') + ': ' + escapeHtml(t.number || '') + '</a></div>'
+      }).join('')
+      return '<div class="order-info-card">' +
+        '<h3>' + escapeHtml(order.name || ('#' + order.id)) + '<span class="order-badge ' + badge + '">' + statusText + '</span></h3>' +
+        (order.customer_name ? '<div class="order-row"><span class="label">Customer</span><span class="value">' + escapeHtml(order.customer_name) + '</span></div>' : '') +
+        (order.customer_email ? '<div class="order-row"><span class="label">Email</span><span class="value">' + escapeHtml(order.customer_email) + '</span></div>' : '') +
+        (order.shipping_address ? '<div class="order-row"><span class="label">Ship to</span><span class="value">' + escapeHtml(order.shipping_address) + '</span></div>' : '') +
+        (items ? '<div class="order-section"><div class="order-section-title">Items</div>' + items + '</div>' : '') +
+        (tracking ? '<div class="order-section"><div class="order-section-title">Tracking</div>' + tracking + '</div>' : '') +
+        (order.note ? '<div class="order-section"><div class="order-section-title">Note</div><div style="color:#374151;font-size:12px;">' + escapeHtml(order.note) + '</div></div>' : '') +
+        '</div>'
     }
 
     // ═══════════════════════════════════════════════════════════════
