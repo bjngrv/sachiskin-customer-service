@@ -155,8 +155,11 @@
     async function igAPI(path, method = 'GET', body = null) {
       const sep = path.includes('?') ? '&' : '?'
       const url = `https://graph.instagram.com/v25.0${path}${sep}access_token=${encodeURIComponent(accessToken)}`
-      const opts = { method, headers: { 'Content-Type': 'application/json' } }
-      if (body) opts.body = JSON.stringify(body)
+      const opts = { method }
+      if (body) {
+        opts.headers = { 'Content-Type': 'application/json' }
+        opts.body = JSON.stringify(body)
+      }
       const res = await fetch(url, opts)
       return res.json()
     }
@@ -201,11 +204,14 @@
           body: JSON.stringify({ code: cleanCode, redirect_uri: CONFIG.REDIRECT_URI }),
         })
         const data = await res.json()
+        console.log('Token exchange response:', JSON.stringify(data))
+
         if (data.error) throw new Error(data.error)
+        if (!data.access_token) throw new Error('No access_token in response: ' + JSON.stringify(data))
 
         accessToken = data.access_token
         localStorage.setItem('ig_access_token', accessToken)
-        localStorage.setItem('ig_token_expiry', Date.now() + (data.expires_in * 1000))
+        localStorage.setItem('ig_token_expiry', Date.now() + ((data.expires_in || 5184000) * 1000))
         await loadMainApp()
 
       } catch (err) {
