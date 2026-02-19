@@ -77,6 +77,8 @@
         .badge-cancelled { background: #fee2e2; color: #991b1b; }
         .quick-lookup { margin-left: 6px; padding: 1px 7px; background: #ede9fe; color: #5b21b6; border: none; border-radius: 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
         .quick-lookup:hover { background: #ddd6fe; }
+        .live-dot { display:inline-block; width:7px; height:7px; background:#16a34a; border-radius:50%; margin-left:6px; animation: pulse 2s infinite; vertical-align:middle; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; color: white; z-index: 9999; animation: fadeInUp 0.3s ease; max-width: 360px; }
         .toast.success { background: #16a34a; }
         .toast.error { background: #dc2626; }
@@ -169,6 +171,8 @@
     let instagramUsername = '@sachiskin'
     let allConversations = []
     let currentConversation = null
+    let pollTimer = null
+    let knownMessageIds = new Set()
 
     // ── Instagram API helper ──────────────────────────────────────
     async function igAPI(path, method = 'GET', body = null) {
@@ -279,6 +283,7 @@
     }
 
     function logout() {
+      stopPolling()
       localStorage.removeItem('ig_access_token')
       localStorage.removeItem('ig_token_expiry')
       window.location.href = CONFIG.REDIRECT_URI
@@ -328,6 +333,64 @@
     }
 
     // ═══════════════════════════════════════════════════════════════
+    //  LIVE POLLING
+    // ═══════════════════════════════════════════════════════════════
+    function startPolling() {
+      stopPolling()
+      // Show live indicator
+      var header = document.getElementById('chatUsername')
+      if (header && !header.querySelector('.live-dot')) {
+        var dot = document.createElement('span'); dot.className = 'live-dot'; dot.title = 'Live updates on'
+        header.appendChild(dot)
+      }
+      pollTimer = setInterval(pollMessages, 15000)
+    }
+
+    function stopPolling() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+    }
+
+    async function pollMessages() {
+      if (!currentConversation || !igAccountId) return
+      try {
+        const convId = currentConversation.id
+        const data = await igAPI('/me/conversations?fields=id,participants,messages{message,from,created_time,id}')
+        if (data.error) return
+        const conversations = data.data || []
+        // Update the sidebar preview text and check for new conversations
+        const hadCount = allConversations.length
+        allConversations = conversations
+        if (conversations.length !== hadCount) displayConversationsList(conversations)
+        else updateConversationPreviews(conversations)
+        // Find the current conversation
+        const updated = conversations.find(function(c){ return c.id === convId })
+        if (!updated) return
+        currentConversation = updated
+        const msgs = (updated.messages && updated.messages.data) || []
+        // Collect new messages (not yet shown), then add oldest-first
+        const newMsgs = msgs.filter(function(m){ return !knownMessageIds.has(m.id) })
+        if (!newMsgs.length) return
+        newMsgs.slice().reverse().forEach(function(msg) {
+          knownMessageIds.add(msg.id)
+          var isFromBusiness = msg.from && msg.from.id === igAccountId
+          addMessageToUI(msg.message, !isFromBusiness, msg.id, false)
+        })
+      } catch (err) {
+        console.warn('[poll] error:', err.message)
+      }
+    }
+
+    function updateConversationPreviews(conversations) {
+      const items = document.querySelectorAll('.conversation-item')
+      conversations.forEach(function(conv, index) {
+        if (!items[index]) return
+        const lastMsg = (conv.messages && conv.messages.data && conv.messages.data[0] && conv.messages.data[0].message) || '…'
+        const preview = items[index].querySelector('.conversation-preview')
+        if (preview) preview.textContent = lastMsg
+      })
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     //  SELECT CONVERSATION
     // ═══════════════════════════════════════════════════════════════
     function selectConversation(index) {
@@ -336,7 +399,10 @@
       const customer = (currentConversation.participants && currentConversation.participants.data || []).find(function(p){ return p.id !== igAccountId })
       const username = (customer && customer.username) || 'instagram_user'
       document.getElementById('chatUsername').textContent = '@' + username
-      displayMessages((currentConversation.messages && currentConversation.messages.data) || [])
+      const msgs = (currentConversation.messages && currentConversation.messages.data) || []
+      knownMessageIds = new Set(msgs.map(function(m){ return m.id }))
+      displayMessages(msgs)
+      startPolling()
       document.getElementById('orderContent').innerHTML = '<div class="no-conversations" style="padding-top:24px; font-size:13px; color:#9ca3af; text-align:center;">Search by email or order number</div>'
     }
 
@@ -498,12 +564,18 @@
     async function deleteMessage(messageId) {
       if (!confirm('Delete this message?')) return
       try {
-        const result = await igAPI('/' + messageId, 'DELETE')
+        // Instagram requires user_id as a query param for delete
+        const result = await igAPI('/' + messageId + '?user_id=' + igAccountId, 'DELETE')
         if (result.error) throw new Error(result.error.message)
         showToast('Message deleted', 'success')
-        await loadConversations()
+        // Remove the message element from the UI
+        document.querySelectorAll('.message.business').forEach(function(el) {
+          var btn = el.querySelector('.delete-btn')
+          if (btn && btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(messageId)) el.remove()
+        })
+        knownMessageIds.delete(messageId)
       } catch (err) {
-        showToast('Delete failed: ' + err.message, 'error')
+        showToast('Could not delete: ' + err.message, 'error')
       }
     }
 
