@@ -440,7 +440,11 @@
         })
         const data = await resp.json()
         if (data.error) throw new Error(data.error)
-        const orders = Array.isArray(data) ? data : [data]
+        if (data.found === false) {
+          orderContent.innerHTML = '<div class="no-conversations" style="padding-top:24px; font-size:13px;">No orders found</div>'
+          return
+        }
+        const orders = data.orders || (Array.isArray(data) ? data : [data])
         if (!orders.length) {
           orderContent.innerHTML = '<div class="no-conversations" style="padding-top:24px; font-size:13px;">No orders found</div>'
           return
@@ -452,25 +456,36 @@
     }
 
     function renderOrderCard(order) {
-      const fulfillStatus = (order.fulfillment_status || '').toLowerCase()
+      const fulfillStatus = (order.fulfillment || order.fulfillment_status || '').toLowerCase()
       const orderStatus = (order.status || '').toLowerCase()
       const badge = orderStatus === 'cancelled' ? 'badge-cancelled' :
                     fulfillStatus === 'fulfilled' ? 'badge-fulfilled' : 'badge-unfulfilled'
       const statusText = orderStatus === 'cancelled' ? 'Cancelled' :
                          fulfillStatus === 'fulfilled' ? 'Fulfilled' : 'Unfulfilled'
       const items = (order.line_items || []).map(function(item) {
-        return '<div class="order-item">• ' + escapeHtml(item.name || item.title || '') +
-               (item.quantity > 1 ? ' ×' + item.quantity : '') + '</div>'
+        var label = escapeHtml(item.title || item.name || '')
+        if (item.variant && item.variant !== 'Default Title') label += ' — ' + escapeHtml(item.variant)
+        return '<div class="order-item">• ' + label + (item.quantity > 1 ? ' ×' + item.quantity : '') + '</div>'
       }).join('')
       const tracking = (order.tracking || []).map(function(t) {
         return '<div class="order-item">• <a href="' + escapeHtml(t.url || '#') + '" target="_blank" style="color:#764ba2;">' +
                escapeHtml(t.company || 'Carrier') + ': ' + escapeHtml(t.number || '') + '</a></div>'
       }).join('')
+      var addr = ''
+      if (order.shipping_address) {
+        if (typeof order.shipping_address === 'string') {
+          addr = order.shipping_address
+        } else {
+          var a = order.shipping_address
+          addr = [a.address1, a.city, a.zip, a.country].filter(Boolean).join(', ')
+        }
+      }
       return '<div class="order-info-card">' +
         '<h3>' + escapeHtml(order.name || ('#' + order.id)) + '<span class="order-badge ' + badge + '">' + statusText + '</span></h3>' +
+        (order.total_price ? '<div class="order-row"><span class="label">Total</span><span class="value">' + escapeHtml(order.total_price) + ' ' + escapeHtml(order.currency || '') + '</span></div>' : '') +
         (order.customer_name ? '<div class="order-row"><span class="label">Customer</span><span class="value">' + escapeHtml(order.customer_name) + '</span></div>' : '') +
         (order.customer_email ? '<div class="order-row"><span class="label">Email</span><span class="value">' + escapeHtml(order.customer_email) + '</span></div>' : '') +
-        (order.shipping_address ? '<div class="order-row"><span class="label">Ship to</span><span class="value">' + escapeHtml(order.shipping_address) + '</span></div>' : '') +
+        (addr ? '<div class="order-row"><span class="label">Ship to</span><span class="value">' + escapeHtml(addr) + '</span></div>' : '') +
         (items ? '<div class="order-section"><div class="order-section-title">Items</div>' + items + '</div>' : '') +
         (tracking ? '<div class="order-section"><div class="order-section-title">Tracking</div>' + tracking + '</div>' : '') +
         (order.note ? '<div class="order-section"><div class="order-section-title">Note</div><div style="color:#374151;font-size:12px;">' + escapeHtml(order.note) + '</div></div>' : '') +
