@@ -77,6 +77,10 @@
         .badge-cancelled { background: #fee2e2; color: #991b1b; }
         .quick-lookup { margin-left: 6px; padding: 1px 7px; background: #ede9fe; color: #5b21b6; border: none; border-radius: 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
         .quick-lookup:hover { background: #ddd6fe; }
+        .auto-toggle { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; border: none; cursor: pointer; margin-left: 10px; transition: all 0.2s; }
+        .auto-toggle.on { background: #d1fae5; color: #065f46; }
+        .auto-toggle.off { background: #f3f4f6; color: #6b7280; }
+        .auto-state-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: #fef3c7; color: #92400e; margin-left: 6px; vertical-align: middle; }
         .live-dot { display:inline-block; width:7px; height:7px; background:#16a34a; border-radius:50%; margin-left:6px; animation: pulse 2s infinite; vertical-align:middle; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; color: white; z-index: 9999; animation: fadeInUp 0.3s ease; max-width: 360px; }
@@ -129,7 +133,13 @@
             </div>
             <!-- Chat -->
             <div class="chat-panel">
-                <div class="chat-header"><span id="chatUsername">Select a conversation</span></div>
+                <div class="chat-header" style="display:flex;align-items:center;justify-content:space-between;">
+                    <span id="chatUsername">Select a conversation</span>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <span id="autoStateBadge" style="display:none;"></span>
+                        <button id="autoToggleBtn" class="auto-toggle off" onclick="toggleAutoRespond()" title="Auto-respond to whitelisted users">&#129302; Auto: OFF</button>
+                    </div>
+                </div>
                 <div class="messages-area" id="messagesArea">
                     <div class="loading" style="padding-top:60px;">Select a conversation to view messages</div>
                 </div>
@@ -161,6 +171,7 @@
       REDIRECT_URI:      'https://bjngrv.github.io/sachiskin-customer-service/',
       TOKEN_EXCHANGE_URL:'https://yupexdimsfuswwkouewp.supabase.co/functions/v1/appfb-customer-service',
       SCOPES:            'instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_content_publish,instagram_business_manage_insights',
+      AUTORESPOND_WHITELIST: ['tncy_cv', 'test_user_sachiskin'],
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -173,6 +184,8 @@
     let currentConversation = null
     let pollTimer = null
     let knownMessageIds = new Set()
+    let autoRespondEnabled = false
+    let conversationStates = {}
 
     // ── Instagram API helper ──────────────────────────────────────
     async function igAPI(path, method = 'GET', body = null) {
@@ -374,9 +387,78 @@
           knownMessageIds.add(msg.id)
           var isFromBusiness = msg.from && msg.from.id === igAccountId
           addMessageToUI(msg.message, !isFromBusiness, msg.id, false)
+          if (!isFromBusiness && autoRespondEnabled) handleAutoResponse(updated, msg)
         })
       } catch (err) {
         console.warn('[poll] error:', err.message)
+      }
+    }
+
+    function toggleAutoRespond() {
+      autoRespondEnabled = !autoRespondEnabled
+      var btn = document.getElementById('autoToggleBtn')
+      btn.textContent = (autoRespondEnabled ? '\u{1F916} Auto: ON' : '\u{1F916} Auto: OFF')
+      btn.className = 'auto-toggle ' + (autoRespondEnabled ? 'on' : 'off')
+      showToast('Auto-respond ' + (autoRespondEnabled ? 'enabled' : 'disabled'), 'info')
+      if (!autoRespondEnabled) { conversationStates = {}; document.getElementById('autoStateBadge').style.display = 'none' }
+    }
+
+    function updateAutoStateBadge(convId) {
+      var badge = document.getElementById('autoStateBadge')
+      var state = conversationStates[convId]
+      if (!state || !currentConversation || currentConversation.id !== convId) { badge.style.display = 'none'; return }
+      badge.style.display = 'inline-block'
+      badge.className = 'auto-state-badge'
+      badge.textContent = state === 'awaiting_yesno' ? '\u23F3 Waiting: Yes/No' : '\u23F3 Waiting: Order details'
+    }
+
+    async function sendAutoMessage(recipientId, messageObj) {
+      try {
+        const result = await igAPI('/' + igAccountId + '/messages', 'POST', { recipient: { id: recipientId }, message: messageObj })
+        if (result.error) throw new Error(result.error.message)
+        var displayText = messageObj.text || ''
+        if (messageObj.quick_replies) displayText += '  [' + messageObj.quick_replies.map(function(q){ return q.title }).join(' / ') + ']'
+        addMessageToUI(displayText, false, result.message_id, false)
+      } catch (err) {
+        console.warn('[auto-respond] send failed:', err.message)
+        showToast('Auto-respond send failed: ' + err.message, 'error')
+      }
+    }
+
+    async function handleAutoResponse(conv, msg) {
+      var customer = (conv.participants && conv.participants.data || []).find(function(p){ return p.id !== igAccountId })
+      if (!customer || !CONFIG.AUTORESPOND_WHITELIST.includes(customer.username)) return
+      var state = conversationStates[conv.id]
+      var text = (msg.message || '').toLowerCase().trim()
+      if (!state) {
+        conversationStates[conv.id] = 'awaiting_yesno'
+        updateAutoStateBadge(conv.id)
+        await sendAutoMessage(customer.id, {
+          text: 'Hi! \uD83D\uDC4B Is your message related to an order?',
+          quick_replies: [{ content_type: 'text', title: 'Yes \u2713', payload: 'ORDER_YES' }, { content_type: 'text', title: 'No', payload: 'ORDER_NO' }],
+        })
+      } else if (state === 'awaiting_yesno') {
+        if (text.startsWith('yes')) {
+          conversationStates[conv.id] = 'awaiting_details'
+          updateAutoStateBadge(conv.id)
+          await sendAutoMessage(customer.id, { text: 'Got it! \uD83D\uDCE6 Please share your order number (e.g. #1234) and email address.' })
+        } else {
+          conversationStates[conv.id] = null
+          updateAutoStateBadge(conv.id)
+          await sendAutoMessage(customer.id, { text: 'No problem! Our team will be with you shortly. \uD83D\uDE0A' })
+        }
+      } else if (state === 'awaiting_details') {
+        var emailMatch = (msg.message || '').match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/)
+        var orderMatch = (msg.message || '').match(/#?(\d{4,6})\b/)
+        if (emailMatch || orderMatch) {
+          conversationStates[conv.id] = null
+          updateAutoStateBadge(conv.id)
+          var query = emailMatch ? emailMatch[0] : '#' + orderMatch[1]
+          document.getElementById('orderSearchInput').value = query
+          await lookupOrder(query)
+          showToast('\uD83D\uDCE6 Order auto-loaded from @' + customer.username, 'info')
+          await sendAutoMessage(customer.id, { text: 'Thanks! Our team will follow up with you shortly. \uD83D\uDE4F' })
+        }
       }
     }
 
