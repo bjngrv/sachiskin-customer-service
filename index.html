@@ -386,8 +386,12 @@
         newMsgs.slice().reverse().forEach(function(msg) {
           knownMessageIds.add(msg.id)
           var isFromBusiness = msg.from && msg.from.id === igAccountId
-          addMessageToUI(msg.message, !isFromBusiness, msg.id, false)
-          if (!isFromBusiness && autoRespondEnabled) handleAutoResponse(updated, msg)
+          // Only render incoming customer messages — outgoing messages are already
+          // rendered immediately when sent, so skip them here to avoid duplicates
+          if (!isFromBusiness) {
+            addMessageToUI(msg.message, true, msg.id, false)
+            if (autoRespondEnabled) handleAutoResponse(updated, msg)
+          }
         })
       } catch (err) {
         console.warn('[poll] error:', err.message)
