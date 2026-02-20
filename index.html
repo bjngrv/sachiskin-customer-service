@@ -416,6 +416,8 @@
       try {
         const result = await igAPI('/' + igAccountId + '/messages', 'POST', { recipient: { id: recipientId }, message: messageObj })
         if (result.error) throw new Error(result.error.message)
+        // Mark as known so the polling loop doesn't render it a second time
+        if (result.message_id) knownMessageIds.add(result.message_id)
         var displayText = messageObj.text || ''
         if (messageObj.quick_replies) displayText += '  [' + messageObj.quick_replies.map(function(q){ return q.title }).join(' / ') + ']'
         addMessageToUI(displayText, false, result.message_id, false)
@@ -547,8 +549,8 @@
           message:   { text: text },
         })
         if (result.error) throw new Error(result.error.message || JSON.stringify(result.error))
-        // If the API returned a message_id, add the delete button to the sent message
-        if (result.message_id && msgDiv) {
+        if (result.message_id) {
+          knownMessageIds.add(result.message_id)
           var actionsDiv = document.createElement('div')
           actionsDiv.className = 'message-actions'
           actionsDiv.innerHTML = '<button class="delete-btn" onclick="deleteMessage(\'' + result.message_id + '\')">🗑 Delete</button>'
